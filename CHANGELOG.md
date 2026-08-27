@@ -2,6 +2,18 @@
 
 All notable changes will be documented here. Releases follow [Semantic Versioning](https://semver.org/) and are automated with release-please.
 
+## 0.1.0 (2026-08-27)
+
+
+### Features
+
+* add Plane on Hetzner OpenTofu module ([c2eaafe](https://github.com/tleers/terraform-hcloud-plane/commit/c2eaafe88459129fb13f1dea15f4d4c3e0a4d3ef))
+
+
+### Bug Fixes
+
+* grant release workflow pull request permissions ([353790e](https://github.com/tleers/terraform-hcloud-plane/commit/353790e1083d52e702294a7f1edf7b9e7a643412))
+
 ## [Unreleased]
 
 ### Added
