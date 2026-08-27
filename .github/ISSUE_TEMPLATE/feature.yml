@@ -1,0 +1,28 @@
+name: Feature request
+description: Propose a module or operational improvement
+title: "feat: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What operator or module-consumer problem should be solved?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed interface and behavior
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Replacement, migration, cost, and security impact
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered

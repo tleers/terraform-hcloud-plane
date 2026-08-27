@@ -1,0 +1,80 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+
+packages:
+  - ca-certificates
+  - curl
+  - docker-compose-v2
+  - docker.io
+  - openssl
+
+ssh_pwauth: false
+disable_root: false
+
+write_files:
+  - path: /usr/local/sbin/install-plane
+    owner: root:root
+    permissions: "0750"
+    content: |
+      #!/usr/bin/env bash
+      set -Eeuo pipefail
+      exec > >(tee -a /var/log/plane-bootstrap.log) 2>&1
+
+      systemctl enable --now docker
+
+      swap_size_gb=${swap_size_gb}
+      if (( swap_size_gb > 0 )) && [[ ! -f /swapfile ]]; then
+        fallocate -l "$${swap_size_gb}G" /swapfile || dd if=/dev/zero of=/swapfile bs=1M count="$((swap_size_gb * 1024))"
+        chmod 0600 /swapfile
+        mkswap /swapfile
+        swapon /swapfile
+        echo '/swapfile none swap sw 0 0' >> /etc/fstab
+        printf 'vm.swappiness=10\n' > /etc/sysctl.d/90-plane-swap.conf
+        sysctl --system
+      fi
+
+      install -d -m 0750 /opt/plane-selfhost/plane-app
+      cd /opt/plane-selfhost
+
+      release="${plane_version}"
+      release_url="https://github.com/makeplane/plane/releases/download/$release"
+      curl -fsSL -o setup.sh "$release_url/setup.sh"
+      curl -fsSL -o plane-app/docker-compose.yaml "$release_url/docker-compose.yml"
+      curl -fsSL -o plane-app/plane.env "$release_url/variables.env"
+      chmod 0750 setup.sh
+
+      secret_key=$(openssl rand -hex 32)
+      live_secret=$(openssl rand -hex 32)
+      postgres_password=$(openssl rand -hex 24)
+      rabbitmq_password=$(openssl rand -hex 24)
+      minio_access_key=$(openssl rand -hex 16)
+      minio_secret_key=$(openssl rand -hex 32)
+
+      set_env() {
+        local key="$1"
+        local value="$2"
+        sed -i "s|^$key=.*|$key=$value|" plane-app/plane.env
+      }
+
+      set_env APP_DOMAIN "${domain}"
+      set_env APP_RELEASE "$release"
+      set_env WEB_URL "https://${domain}"
+      set_env CORS_ALLOWED_ORIGINS "https://${domain}"
+      set_env SITE_ADDRESS "${domain}"
+      set_env CERT_EMAIL "${admin_email}"
+      set_env POSTGRES_PASSWORD "$postgres_password"
+      set_env RABBITMQ_PASSWORD "$rabbitmq_password"
+      set_env AWS_ACCESS_KEY_ID "$minio_access_key"
+      set_env AWS_SECRET_ACCESS_KEY "$minio_secret_key"
+      set_env SECRET_KEY "$secret_key"
+      set_env LIVE_SERVER_SECRET_KEY "$live_secret"
+
+      chmod 0600 plane-app/plane.env
+      docker compose -f plane-app/docker-compose.yaml --env-file plane-app/plane.env pull
+      docker compose -f plane-app/docker-compose.yaml --env-file plane-app/plane.env up -d
+
+runcmd:
+  - [/usr/local/sbin/install-plane]
+
+final_message: "Plane bootstrap finished after $UPTIME seconds. See /var/log/plane-bootstrap.log."

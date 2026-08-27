@@ -1,0 +1,17 @@
+formatter: markdown table
+output:
+  file: docs/module-reference.md
+  mode: inject
+settings:
+  anchor: true
+  default: true
+  description: true
+  escape: true
+  hide-empty: false
+  html: true
+  indent: 2
+  lockfile: true
+  read-comments: true
+  required: true
+  sensitive: true
+  type: true

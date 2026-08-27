@@ -1,0 +1,132 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions: read-all
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: ${{ matrix.engine }} validate and test
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [opentofu, terraform]
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install OpenTofu
+        if: matrix.engine == 'opentofu'
+        uses: opentofu/setup-opentofu@9d84900f3238fab8cd84ce47d658d25dd008be2f # v1
+        with:
+          tofu_version: 1.12.5
+
+      - name: Install Terraform
+        if: matrix.engine == 'terraform'
+        uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # v3
+        with:
+          terraform_version: 1.15.8
+
+      - name: Select command
+        id: cli
+        shell: bash
+        run: echo "command=${{ matrix.engine == 'opentofu' && 'tofu' || 'terraform' }}" >> "$GITHUB_OUTPUT"
+
+      - name: Check formatting
+        run: ${{ steps.cli.outputs.command }} fmt -recursive -check -diff
+
+      - name: Initialize without backend
+        run: ${{ steps.cli.outputs.command }} init -backend=false -input=false
+
+      - name: Validate module
+        run: ${{ steps.cli.outputs.command }} validate -no-color
+
+      - name: Run mocked tests
+        run: ${{ steps.cli.outputs.command }} test -no-color -var-file=tests/test.tfvars
+
+      - name: Check generated module reference
+        if: matrix.engine == 'opentofu'
+        uses: terraform-docs/gh-actions@6de6da0cefcc6b4b7a5cbea4d79d97060733093c # v1.4.1
+        with:
+          working-dir: .
+          output-file: docs/module-reference.md
+          output-method: inject
+          git-push: "false"
+
+      - name: Fail if generated module reference is stale
+        if: matrix.engine == 'opentofu'
+        run: git diff --exit-code -- docs/module-reference.md
+
+      - name: Validate examples
+        shell: bash
+        run: |
+          for example in examples/*; do
+            "$CLI" -chdir="$example" init -backend=false -input=false
+            "$CLI" -chdir="$example" validate -no-color
+          done
+        env:
+          CLI: ${{ steps.cli.outputs.command }}
+
+  lint:
+    name: TFLint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install TFLint
+        uses: terraform-linters/setup-tflint@6770de8d186019a148cc2b144e8bfa627f7d4aa8 # v5
+
+      - name: Initialize TFLint
+        run: tflint --init
+
+      - name: Run TFLint
+        run: tflint --recursive --format compact
+
+  security:
+    name: Trivy configuration scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Scan configuration
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          format: sarif
+          output: trivy-results.sarif
+          severity: HIGH,CRITICAL
+          exit-code: 1
+
+      - name: Upload SARIF
+        if: always()
+        uses: github/codeql-action/upload-sarif@e4fba868fa4b1b91e1fdab776edc8cfbe6e9fb81 # v4.37.3
+        with:
+          sarif_file: trivy-results.sarif
+
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Review dependency changes
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0

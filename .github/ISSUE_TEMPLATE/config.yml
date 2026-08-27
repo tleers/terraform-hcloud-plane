@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Plane application support
+    url: https://github.com/makeplane/plane/issues
+    about: Report Plane application behavior upstream.
+  - name: Security vulnerability
+    url: https://github.com/tleers/terraform-hcloud-plane/security/advisories/new
+    about: Report vulnerabilities privately.

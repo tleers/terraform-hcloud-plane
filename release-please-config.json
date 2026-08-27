@@ -1,0 +1,9 @@
+{
+  "packages": {
+    ".": {
+      "package-name": "terraform-hcloud-plane",
+      "release-type": "terraform-module",
+      "changelog-path": "CHANGELOG.md"
+    }
+  }
+}
