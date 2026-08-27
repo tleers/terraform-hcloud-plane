@@ -22,7 +22,7 @@ This is a cost-conscious single-node deployment, not a highly available architec
 
 ## Deployment profiles and cost
 
-The default `cax11` profile provides 2 ARM vCPU, 4 GB RAM, 40 GB local disk, and a 2 GiB swap safety valve. It is the smallest profile we operate for Plane and is intended for a small team. The 8 GB `cax21` profile is the sensible next step if imports, background work, or simultaneous users cause memory pressure.
+The default `cax11` profile provides 2 ARM vCPU, 4 GB RAM, 40 GB local disk, and a 2 GiB swap safety valve for a small team. The 8 GB `cax21` profile is the sensible next step if imports, background work, or simultaneous users cause memory pressure.
 
 At Hetzner's Nuremberg list price checked on 2026-08-28, a `cax11` is €5.99/month plus a €0.50 primary IPv4. Enabling the default Hetzner backups adds 20% of server cost, for an indicative €7.69/month before VAT, a domain, SMTP, or off-server backup storage. Prices and taxes vary by account and location; always review the Hetzner estimate and `tofu plan` before applying.
 
@@ -106,7 +106,7 @@ make security
 make docs
 ```
 
-Tests use a mocked provider and create no billable resources. A fresh-project acceptance deployment is the remaining release gate before calling this production-tested. See [Contributing](CONTRIBUTING.md), [Security](SECURITY.md), and the [repository benchmark](docs/benchmark.md).
+Tests use a mocked provider and create no billable resources. A fresh-project acceptance deployment is the remaining release gate before calling this production-tested. See [Contributing](CONTRIBUTING.md) and [Security](SECURITY.md).
 
 ## License
 

@@ -1,4 +1,0 @@
-interface:
-  display_name: "Manage Plane on Hetzner"
-  short_description: "Safely develop and operate the Plane module"
-  default_prompt: "Use $manage-plane-hetzner to validate or safely change this Plane deployment."
